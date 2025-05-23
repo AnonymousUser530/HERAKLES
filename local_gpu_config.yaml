@@ -1,0 +1,219 @@
+lamorel_args:
+  log_level: info
+  llm_configs:
+    main_llm:
+      handler:  unsloth
+      constructor_kwargs:
+      model_type: causal
+      model_path: t5-small
+      pretrained: true
+      minibatch_size: 256
+      pre_encode_inputs: false
+      load_in_4bit: true
+      synchronize_gpus_after_scoring: false
+      empty_cuda_cache_after_scoring: false
+  distributed_setup_args:
+    backend: gloo  # nccl
+    init_timeout: 120
+    timeout: 1800
+    multinode: false
+    multinode_args:
+      main_process_ip: 127.0.0.1
+      main_process_port: 25000
+      experiment_id: 0
+    n_rl_processes: 1
+    llm_processes:
+      main_llm:
+        n_processes: 2
+        devices_per_process: [['cpu'],['cpu']]
+        ddp_kwargs:
+          find_unused_parameters: true
+  gloo_timeout: 2700
+  allow_subgraph_use_whith_gradient: true
+
+rl_script_args:
+  name_experiment:
+  path: ??
+  seed: 1
+  # ppo
+  ppo_epochs: 4
+  lam: 0.9
+  gamma: 0.99
+  lr: 1e-5
+  lr_policy: 1e-5
+  lr_value: 1e-4
+  add_eos_on_candidates: true
+  entropy_coef: 0.01
+  adjust_entropy_coef: false
+  entropy_coef_max: 0.05
+  entropy_coef_min: 0.01
+  change_rate_entropy: 1.25
+  value_loss_coef: 0.5
+  clip_eps: 0.2
+  max_grad_norm: 0.5
+  minibatch_size: 1024
+  # llm
+  load_state_dict_strict: false
+  gradient_batch_size: 16   # number of sequences to use for each gradient update
+  gradient_minibatch_size:
+  ## LoRA
+  use_lora: true
+  lora_r: 16
+  lora_alpha: 32
+  # rl training high level agent
+  number_envs: 2
+  max_ep_len: 10000
+  epochs: 1000
+  steps_per_epoch: 10 #256
+  max_tokens_per_epoch: 4800
+  max_len_memory: 3 # memory of the high level agent nbr of steps
+  save_freq: 1
+  output_dir: 'home/tcarta/Automatic_Goal_Generation/DLP/agent_models'
+  loading_path_high_level:
+  # environment
+  task: 'BabyAI-PickupLocal-v0'
+  action_space: [ "turn_left","turn_right","go_forward","pick_up","drop","toggle" ]
+  task_space: [ "collect_wood" ]
+  long_description: false
+  normalized_reward: true
+  # low level agent
+  actor_critic_separated: true
+  memory_ll: false
+  infinite_LL_traj: true
+  loading_path_low_level:
+  pretrained_model: true
+  model: "GTL16-nbr_actions-6-PPO-NoPre-2_best"
+  nbr_tests: 1000
+  nbr_tests_low_level: 100
+  nbr_tests_hierarchical_agent: 16
+  test_hierarchical_agent_freq: 2
+  test_hierarchical_agent: true
+  lr_low_level: 0.0001
+  lr_low_level_hindsight: 0.0001
+  lr_low_level_actor: 0.00005
+  lr_low_level_critic: 0.0001
+  update_low_level: true
+  update_low_level_after_n_transitions: 2496
+  test_low_level: false
+  # if the low level model is sparse
+  low_level_sparsity: 0.25
+  # if the low level model is dendritic
+  num_segments: 4
+  dim_context: 5
+  dendrite_bias: null
+  dendritic_simple: false
+  # if we control manually the max len of trajectories
+  ll_traj_len_max: 64
+  hl_traj_len_max: 64
+  hl_only_useful_tokens: true
+  # env max step before having to reset env
+  env_max_step: "inf"
+  # values when low level is dqn
+  nbr_dqn_updates: 10
+  max_len_buffer_dqn: 12800
+  batch_dqn_size: 32
+  update_target_dqn_frequency: 3
+  max_priority: 1
+  per_alpha: 0.6
+  per_beta: 0.4
+  per_epsilon: 1e-4
+  # values when low level is ppo
+  clip_eps_low_level: 0.2
+  entropy_coef_low_level: 0.01
+  value_loss_coef_low_level: 0.5
+  kl_coef_with_original_model: 0.1
+  compute_kl_with_original_model: false
+  max_grad_norm_low_level: 0.5
+  ppo_low_level_hindsight_epochs: 4
+  ppo_low_level_epochs: 4
+  minibatch_size_low_level: 1024
+  ppo_kl_penalty_hindsight: false
+  kl_penalty_coefficient_hindsight: 1.0
+  kl_penalty_target_hindsight: 0.5
+  kl_penalty_coefficient_low_level: 1.0
+  kl_penalty_target_low_level: 0.01
+  bias_clip_hindsight: false
+  bias_clip_lower_hindsight: 0.4
+  bias_clip_upper_hindsight: 1.2
+  # values when low level is train with bc or kl aw="advantage weighted"
+  hindsight_low_level_epoch: 4
+  aw_method: "AW_no_filter"
+  aw_beta: 1
+  # values when low level is train with awr
+  lam_awr: 0.95
+  beta_awr: 20
+  gamma_awr: 0.99
+  entro_coef_awr: 1
+  normalisation_coef_awr: true
+  tsallis_reg: false
+  tsallis_reg_q: 5
+  max_size_awr_buffer: 50000
+  awr_critic_epochs_low_level: 200
+  awr_policy_epochs_low_level: 1000
+  nbr_usage_transition_awr_critic: 1
+  nbr_usage_transition_awr_policy: 5
+  minibatch_size_awr_low_level: 256
+  # value for changing skill in the curriculum
+  success_change_skill_rate_threshold: 0.7
+  ll_master_skill_success_rate_threshold: 0.7 # should be preferred to success_change_skill_rate_threshold
+  update_low_level_threshold: 0.8
+  # AWAC
+  minibatch_size_awac: 1024
+  nbr_usage_transition_awac: 1
+  beta_awac: 2
+  max_size_awac_buffer: 100000
+  gamma_awac: 0.99
+  tau_awac: 0.005
+  # Goal sampler
+  goal_sampler: SRDiffGoalSampler
+  # reseting of environment
+  reset_word_only_at_episode_termination: false
+  # soft approximation
+  soft_approximation:
+    explo_noise: 0.1
+  nn_approximation:
+    memory_depth: 2
+    explo_noise: 0.1
+    update_ll_sr_estimator_after_n_transitions: 128
+    batch_size_ll_sr_estimator: 256
+    epochs_ll_sr_estimator: 1
+    lr_ll_sr_estimator: 0.0001
+  hl_only: false
+malp_args:
+  epsilon_start: 1.0
+  epsilon_end: 0.1
+  epsilon_decay: 320
+  buffer_size: 100
+  alpha: 0.1
+srdiff_args:
+  epsilon_start: 1.0
+  epsilon_end: 0.1
+  epsilon_decay: 320
+  buffer_size: 400
+magellan_args:
+  epsilon_start: 1.0
+  epsilon_end: 0.1
+  # decaying to 0.05 in 10 epochs
+  epsilon_decay: 3.34
+  buffer_size: 5000
+  batch_size: 256
+  recompute_freq: 1
+  N: 3
+  lr_hl_sr_estimator: 0.0001
+  memory_depth: 3
+  batch_size_hl_sr_estimator: 256
+  epochs_hl_sr_estimator: 2
+  update_hl_sr_estimator_after_n_transitions: 128
+test_args:
+  action_space_mod: null
+  train_data_file: textcrafter_DLP_MAGELLAN_test
+  hyperparameter_ll_sr_estimator: true
+  hyperparameter_hl_sr_estimator: false
+test_training_script:
+  epoch_k: 0
+  nbr_tests_hierarchical_agent: 10
+  goal_space: [ "collect_wood" ]
+  test_name: "test_sr"
+  test_generalisation:
+    nbr_compositional_tasks: 2
+
